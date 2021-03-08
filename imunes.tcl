@@ -212,12 +212,13 @@ safeSourceFile "$ROOTDIR/$LIBDIR/nodes/annotations.tcl"
 #*****
 
 # Clipboard
-namespace eval cf::clipboard {}
-set cf::clipboard::node_list {}
-set cf::clipboard::link_list {}
-set cf::clipboard::annotation_list {}
-set cf::clipboard::canvas_list {}
-set cf::clipboard::image_list {}
+namespace eval cf::clipboard {
+    variable node_list {}
+    variable link_list {}
+    variable annotation_list {}
+    variable canvas_list {}
+    variable image_list {}
+}
 
 set cfg_list {}
 set curcfg ""
