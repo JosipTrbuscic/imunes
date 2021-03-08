@@ -856,7 +856,7 @@ proc l3node.destroy { eid node } {
 #   deployCfg
 # FUNCTION
 #   Deploys a current working configuration. It creates all the nodes and link
-#   as defined in configuration file of in GUI of imunes. Before deploying new
+#   as defined in configuration file or in GUI of imunes. Before deploying new
 #   configuration the old one is removed (vimageCleanup procedure).
 #****
 proc deployCfg {} {
