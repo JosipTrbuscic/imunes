@@ -3,24 +3,6 @@ set VROOT_MASTER "imunes/template"
 set ULIMIT_FILE "1024:16384"
 set ULIMIT_PROC "512:1024"
 
-#****f* freebsd.tcl/moveFileFromNode
-# NAME
-#   moveFileFromNode -- copy file from virtual node
-# SYNOPSIS
-#   moveFileFromNode $node $path $ext_path
-# FUNCTION
-#   Moves file from virtual node to a specified external path.
-# INPUTS
-#   * node -- virtual node id
-#   * path -- path to file in node
-#   * ext_path -- external path
-#****
-proc moveFileFromNode { node path ext_path } {
-    upvar 0 ::cf::[set ::curcfg]::eid eid
-    set node_dir [getVrootDir]/$eid/$node
-    catch {exec mv $node_dir$path $ext_path}
-}
-
 #****f* linux.tcl/writeDataToNodeFile
 # NAME
 #   writeDataToNodeFile -- write data to virtual node
@@ -60,6 +42,7 @@ proc execCmdNode { node cmd } {
     upvar 0 ::cf::[set ::curcfg]::eid eid
 
     catch {eval [concat "nexec docker exec " $eid.$node $cmd] } output
+    puts "$output"
     return $output
 }
 

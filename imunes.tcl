@@ -138,7 +138,10 @@ if { $prepareFlag } {
 # Runtime libriaries
 foreach file [glob -directory $ROOTDIR/$LIBDIR/runtime *.tcl] {
     if { [string match -nocase "*linux.tcl" $file] != 1 } {
+    #if { [string match -nocase "*freebsd.tcl" $file] != 1 } {
+        puts "sourcing $file"
 	safeSourceFile $file
+    #}
     }
 }
 

@@ -94,6 +94,7 @@ proc removeGUINode { node } {
 	}
     }
     if { $type != "pseudo" } {
+		puts "removeGUINode: Removing $node"
 	removeNode $node
 	.panwin.f1.c delete $node
     }
@@ -686,6 +687,7 @@ proc button3node { c x y } {
     if { $oper_mode != "exec" } {
 	.button3menu add command -label "Delete" -command deleteSelection
     } else {
+	.button3menu add command -label "Delete" -command deleteSelection
 #	.button3menu add command -label "Delete" -state disabled
     }
 
@@ -1803,12 +1805,14 @@ proc anyLeave {c} {
 proc deleteSelection {} {
     upvar 0 ::cf::[set ::curcfg]::curcanvas curcanvas
     upvar 0 ::cf::[set ::curcfg]::oper_mode oper_mode
+    upvar 0 ::cf::[set ::curcfg]::eid eid
     global changed
     global background 
     global viewid
 
     if { $oper_mode == "exec" } {
-	return
+		puts "oper_mode je exec"
+	#return
     }
 
     catch {unset viewid}
@@ -1816,7 +1820,14 @@ proc deleteSelection {} {
 
     foreach lnode [selectedNodes] {
 	if { $lnode != "" } {
+		puts "deleteSelection: Removing $lnode"
 	    removeGUINode $lnode
+		if { $oper_mode == "exec" } {
+			puts "deleteSelection: Shutting down $lnode"
+			l3node.shutdown $eid $lnode
+			puts "deleteSelection: Destroying $lnode"
+			l3node.destroy $eid $lnode
+		}
 	}
 	if { [isAnnotation $lnode] } {
 	    deleteAnnotation $curcanvas [nodeType $lnode] $lnode

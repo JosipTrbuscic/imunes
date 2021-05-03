@@ -1951,6 +1951,7 @@ proc removeNode { node } {
     upvar 0 ::cf::[set ::curcfg]::node_list node_list
     upvar 0 ::cf::[set ::curcfg]::$node $node
     global nodeNamingBase
+    puts "removeNode: Removing node $node"
 
     if { [getCustomIcon $node] != "" } {
 	removeImageReference [getCustomIcon $node] $node

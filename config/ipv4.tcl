@@ -406,6 +406,7 @@ proc nextFreeIP4Addr { addr start peers } {
 #   * iface -- the interface on witch we search for a new default gateway
 #****
 proc autoIPv4defaultroute { node iface } {
+	puts "autoIPv4defaultroute: Assigning default route for $node"
     global IPv4autoAssign
     if {!$IPv4autoAssign} {
 	return

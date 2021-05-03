@@ -843,10 +843,13 @@ proc l3node.shutdown { eid node } {
 #   * node -- node id
 #****
 proc l3node.destroy { eid node } {
+	puts "l3node.destroy: Destroying node virt ifcs $node"
     destroyNodeVirtIfcs $eid $node
+	puts "l3node.destroy: Removing node container $node"
     removeNodeContainer $eid $node
+	puts "l3node.destroy: Removing node FS $node"
     removeNodeFS $eid $node
-    pipesExec ""
+    #pipesExec ""
 }
 
 #****f* exec.tcl/deployCfg
@@ -939,6 +942,8 @@ proc deployCfg {} {
 	}
 	displayBatchProgress $step $allNodes
 	if {$type != "pseudo"} {
+		set tm [typemodel $node]
+		puts "Calling $tm .instantiate"
 	    [typemodel $node].instantiate $eid $node
 	    pipesExec ""
 	} else {
