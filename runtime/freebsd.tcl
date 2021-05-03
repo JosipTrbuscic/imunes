@@ -1428,6 +1428,7 @@ proc removeNodeIfcIPaddrs { eid node } {
 #****
 proc destroyNodeVirtIfcs { eid node } {
     set node_id $eid.$node
+    puts "destroyNodeVirtIfcs: Destroying virtual ifc for $node"
 
     pipesExec "for iface in `jexec $node_id ifconfig -l`; do jexec $node_id ifconfig \$iface destroy; done" "hold"
 }
@@ -1901,6 +1902,8 @@ proc l2node.destroy { eid node } {
 #   * cpucount - CPU count
 #****
 proc getCpuCount {} {
+    set a [lindex [exec sysctl kern.smp.cpus] 1]
+    puts "Cpus: $a" 
     return [lindex [exec sysctl kern.smp.cpus] 1]
 }
 
