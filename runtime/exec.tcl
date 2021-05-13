@@ -115,6 +115,7 @@ proc setOperMode { mode } {
     upvar 0 ::cf::[set ::curcfg]::cfgDeployed cfgDeployed
     upvar 0 ::cf::[set ::curcfg]::eid eid
     global all_modules_list editor_only execMode isOSfreebsd isOSlinux
+	puts "Setting oper mode"
 
     if {$mode == "exec" && $node_list == ""} {
 	statline "Empty topologies can't be executed."
@@ -161,7 +162,8 @@ proc setOperMode { mode } {
 
     foreach b { link link_layer net_layer } {
 	if { "$mode" == "exec" } {
-	    .panwin.f1.left.$b configure -state disabled
+		puts "Disabling: $b"
+	    #.panwin.f1.left.$b configure -state disabled
 	} else {
 	    .panwin.f1.left.$b configure -state normal
 	}
@@ -185,8 +187,10 @@ proc setOperMode { mode } {
 	set oper_mode exec
 	wm protocol . WM_DELETE_WINDOW {
 	}
+	puts "Prije cfgdeployedif"
 	if {!$cfgDeployed} {
 	    deployCfg
+		puts "Poslije cfgdeployedif"
 	    set cfgDeployed true
 	    createExperimentFiles $eid
 	}
@@ -454,6 +458,7 @@ proc createExperimentFiles { eid } {
     set basedir "$runtimeDir/$eid"
     file mkdir $basedir
     
+	puts "Creating experiment files: $basedir"
     writeDataToFile $basedir/timestamp [clock format [clock seconds]]
     
     dumpNgnodesToFile $basedir/ngnodemap
@@ -852,6 +857,27 @@ proc l3node.destroy { eid node } {
     removeNodeFS $eid $node
     pipesExec ""
 	pipesClose
+}
+
+proc deployNodeToRunningExperiment { node } {
+    upvar 0 ::cf::[set ::curcfg]::eid eid
+
+    set t_start [clock milliseconds]
+    statline "Adding node $node ..."
+
+	set node_id "$eid\.$node"
+	set type [nodeType $node]
+	set name [getNodeName $node]
+
+	pipesCreate
+	set tm [typemodel $node]
+	puts "Calling $tm .instantiate"
+	[typemodel $node].instantiate $eid $node
+	pipesClose
+
+	set t_end [clock milliseconds] 
+	set t_diff [expr ($t_end - $t_start)/1000.]
+    statline "Added node $node in $t_diff seconds"
 }
 
 #****f* exec.tcl/deployCfg

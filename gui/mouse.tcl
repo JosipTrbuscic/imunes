@@ -952,6 +952,8 @@ proc button3node { c x y } {
 #****
 proc button1 { c x y button } {
     upvar 0 ::cf::[set ::curcfg]::node_list node_list
+    upvar 0 ::cf::[set ::curcfg]::oper_mode oper_mode
+    upvar 0 ::cf::[set ::curcfg]::cfgDeployed cfgDeployed
     upvar 0 ::cf::[set ::curcfg]::curcanvas curcanvas
     upvar 0 ::cf::[set ::curcfg]::zoom zoom
     global activetool newlink curobj changed def_router_model
@@ -1056,6 +1058,7 @@ proc button1 { c x y button } {
     }
     if { $isObjectDrawable } {
 	if { $activetool ni {select link oval rectangle text freeform} } {
+		puts "Node list before $node_list"
 	    # adding a new node
 	    set node [newNode $activetool]
 	    setNodeCanvas $node $curcanvas
@@ -1069,6 +1072,12 @@ proc button1 { c x y button } {
 	    drawNode $node
 	    selectNode $c [$c find withtag "node && $node"]
 	    set changed 1
+		puts "Node list after $node_list"
+		puts "oper_mode button1: $oper_mode"
+		if {$oper_mode == "exec"} {
+			puts "CfgDeployed: $cfgDeployed"
+			deployNodeToRunningExperiment $node
+		}
 	} elseif { $activetool == "select" \
 	    && $curtype != "node" && $curtype != "nodelabel"} {
 	    $c config -cursor cross

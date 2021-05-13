@@ -612,7 +612,6 @@ proc netconfInsertSection { node section } {
 	}
     }
     set $node [lreplace [set $node] $i $i [list network-config $netconf]]
-    puts "$netconfInsertSection: "
 }
 
 #****f* nodecfg.tcl/getIfcOperState
