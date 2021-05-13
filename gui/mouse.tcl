@@ -1806,6 +1806,8 @@ proc deleteSelection {} {
     upvar 0 ::cf::[set ::curcfg]::curcanvas curcanvas
     upvar 0 ::cf::[set ::curcfg]::oper_mode oper_mode
     upvar 0 ::cf::[set ::curcfg]::eid eid
+    upvar 0 ::cf::[set ::curcfg]::node_list node_list
+    upvar 0 ::cf::[set ::curcfg]::ngnodemap ngnodemap
     global changed
     global background 
     global viewid
@@ -1827,6 +1829,29 @@ proc deleteSelection {} {
 			l3node.shutdown $eid $lnode
 			puts "deleteSelection: Destroying $lnode"
 			l3node.destroy $eid $lnode
+			pipesCreate
+			foreach node $node_list {
+				if { [[typemodel $node].layer] == "NETWORK"} {
+					set ifcsOnNodeWithLoopback [execCmdNode $node "ifconfig -l"]
+					set idx [lsearch $ifcsOnNodeWithLoopback "lo0"]
+					set ifcsOnNode [lreplace $ifcsOnNodeWithLoopback $idx $idx]
+					set correctIfcs [ifcList $node]
+					foreach ifc $ifcsOnNode {
+						puts "Searching for $ifc on $node"
+						if { [lsearch -exact $correctIfcs $ifc] == -1 } {
+							puts "Destroying $ifc on $node"
+							set ngnode $ngnodemap($ifc@$eid.$node)
+							puts "ngnode: $ngnode"
+							pipesExec "jexec $eid ngctl shutdown $ngnode:"
+							#execCmdNode $node "ifconfig "
+						}
+
+					}
+				}
+				puts "$node: $ifcsOnNode"
+				puts "\n"
+			}
+			pipesClose
 		}
 	}
 	if { [isAnnotation $lnode] } {

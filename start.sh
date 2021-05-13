@@ -1,2 +1,2 @@
-sudo make install
-sudo imunes topo2.imn
+make install
+imunes ../imunes-examples/Ping/ping.imn
