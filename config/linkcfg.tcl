@@ -973,6 +973,7 @@ proc numOfLinks { node } {
 #   * new_link_id -- new link id.
 #****
 proc newLink { lnode1 lnode2 } {
+    upvar 0 ::cf::[set ::curcfg]::oper_mode oper_mode
     upvar 0 ::cf::[set ::curcfg]::link_list link_list
     upvar 0 ::cf::[set ::curcfg]::$lnode1 $lnode1
     upvar 0 ::cf::[set ::curcfg]::$lnode2 $lnode2
@@ -1026,6 +1027,21 @@ proc newLink { lnode1 lnode2 } {
 	if {[info procs [nodeType $lnode1].confNewIfc] != ""} {
 	    [nodeType $lnode1].confNewIfc $lnode1 $ifname1
 	}
+    }
+
+    if { $oper_mode == "exec" } {
+        pipesCreate
+        createNodePhysIfc $lnode1 $ifname1
+        createNodePhysIfc $lnode2 $ifname2
+        startIfcsNode $lnode1
+        startIfcsNode $lnode2
+        configureICMPoptions $lnode1
+        configureICMPoptions $lnode2
+        createLinkBetween $lnode1 $lnode2 $ifname1 $ifname2
+        configureLinkBetween $lnode1 $lnode2 $ifname1 $ifname2 $link
+        runConfOnNode $lnode1
+        runConfOnNode $lnode2
+        pipesClose
     }
 
     return $link

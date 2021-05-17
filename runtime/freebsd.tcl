@@ -1147,9 +1147,33 @@ proc createNodeContainer { node } {
     upvar 0 ::cf::[set ::curcfg]::eid eid
 
     set node_dir [getVrootDir]/$eid/$node
+    puts "Node dir: $node_dir"
 
     pipesExec "jail -c name=$eid.$node path=$node_dir securelevel=1 \
 	host.hostname=\"[getNodeName $node]\" vnet persist" "hold"
+}
+
+proc createNodePhysIfc { node ifc } {
+    upvar 0 ::cf::[set ::curcfg]::ngnodemap ngnodemap
+    upvar 0 ::cf::[set ::curcfg]::eid eid
+    global ifc_dad_disable
+
+    set node_id "$eid.$node"
+
+	set ifid [createIfc $eid eiface ether]
+	pipesExec "jexec $eid ifconfig $ifid vnet $node" "hold"
+	pipesExec "jexec $node_id ifconfig $ifid name $ifc" "hold"
+
+	set ether [getIfcMACaddr $node $ifc]
+    if {$ether == ""} {
+        autoMACaddr $node $ifc
+    }
+    set ether [getIfcMACaddr $node $ifc]
+	if {$ifc_dad_disable} {
+	    pipesExec "jexec $node_id sysctl net.inet6.ip6.dad_count=0" "hold"
+	}
+	pipesExec "jexec $node_id ifconfig $ifc link $ether" "hold"
+	set ngnodemap($ifc@$node_id) $ifid
 }
 
 #****f* freebsd.tcl/createNodePhysIfcs
@@ -1190,6 +1214,7 @@ proc createNodePhysIfcs { node } {
 		if {$ifc_dad_disable} {
 		    pipesExec "jexec $node_id sysctl net.inet6.ip6.dad_count=0" "hold"
 		}
+        puts "executing  ifconfig $ifc link $ether"
 		pipesExec "jexec $node_id ifconfig $ifc link $ether" "hold"
 		set ngnodemap($ifc@$node_id) $ifid
 	    }
@@ -1293,10 +1318,13 @@ proc configureICMPoptions { node } {
 #****
 proc startIfcsNode { node } {
     upvar 0 ::cf::[set ::curcfg]::eid eid
+    upvar 0 ::cf::[set ::curcfg]::node_list node_list
 
     set node_id "$eid.$node"
     set cmds ""
+    puts "Node list: $node_list"
     foreach ifc [allIfcList $node] {
+        puts "Starting $ifc on $node"
 	set mtu [getIfcMTU $node $ifc]
 	if {[getIfcOperState $node $ifc] == "up"} {
 	    set cmds "$cmds\n jexec $node_id ifconfig $ifc mtu $mtu up"
@@ -1318,6 +1346,7 @@ proc startIfcsNode { node } {
 #   * node -- node id
 #****
 proc runConfOnNode { node } {
+    puts "Running conf on $node"
     upvar 0 ::cf::[set ::curcfg]::eid eid
     global vroot_unionfs
     global viewcustomid vroot_unionfs

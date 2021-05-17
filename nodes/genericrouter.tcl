@@ -58,6 +58,7 @@ registerRouterModule $MODULE
 #   * ifc -- interface name
 #****
 proc $MODULE.confNewIfc { node ifc } {
+    puts "conf new ifc $node"
     global changeAddressRange changeAddressRange6
     set changeAddressRange 0
     set changeAddressRange6 0

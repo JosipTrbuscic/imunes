@@ -873,7 +873,19 @@ proc deployNodeToRunningExperiment { node } {
 	set tm [typemodel $node]
 	puts "Calling $tm .instantiate"
 	[typemodel $node].instantiate $eid $node
+	puts "Sleeping 1sec"
+	# Arbitrary sleep, wait for jails startup
+	after 1000
+	puts "waking up"
+
+    services start "NODEINST" $node
+    services start "LINKINST" $node
+
+	[typemodel $node].start $eid $node
+
+    services start "NODECONF" $node
 	pipesClose
+
 
 	set t_end [clock milliseconds] 
 	set t_diff [expr ($t_end - $t_start)/1000.]
@@ -1054,6 +1066,7 @@ proc deployCfg {} {
 	    }
 
 	    if {[info procs [typemodel $node].start] != ""} {
+			puts "\nStarting $node"
 		[typemodel $node].start $eid $node
 	    }
 	}
@@ -1321,12 +1334,12 @@ proc pipesExec { line args } {
     global inst_pipes last_inst_pipe
 
     set pipe $inst_pipes($last_inst_pipe)
-	puts "putting $line to $pipe"
+	#puts "putting $line to $pipe"
     puts $pipe $line
 
     flush $pipe
     if { $args != "hold" } {
-		puts "Incrementing"
+		#puts "Incrementing"
 	incr last_inst_pipe
     }
     if {$last_inst_pipe >= [llength [array names inst_pipes]]} {

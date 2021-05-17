@@ -2822,6 +2822,7 @@ proc isNodeRouter { node } {
 #   * value -- interface IPv4 configuration script
 #****
 proc nodeCfggenIfcIPv4 { node } {
+    puts "Configuring ipv4 for $node"
     set cfg {}
     foreach ifc [allIfcList $node] {
 	set primary 1
