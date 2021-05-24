@@ -1367,6 +1367,8 @@ proc runConfOnNode { node } {
 	set confFile "boot.conf"
     }
 
+    puts "Bootcmd for $node: $bootcmd"
+
     set cmds ""
 
     writeDataToFile $node_dir/$confFile [join $bootcfg "\n"]
@@ -1672,6 +1674,7 @@ proc createLinkBetween { lnode1 lnode2 ifname1 ifname2 } {
 	return
     }
 
+    puts "createLinkBetween: $lnode1 $lnode2: $ngpeer1 $nghook1 $lname $ngpeer2 $nghook2"
     set cmds "$cmds\n mkpeer $ngpeer1: pipe $nghook1 upper"
     set cmds "$cmds\n name $ngpeer1:$nghook1 $lname"
     set cmds "$cmds\n connect $lname: $ngpeer2: lower $nghook2"

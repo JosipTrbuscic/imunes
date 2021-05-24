@@ -115,7 +115,6 @@ proc setOperMode { mode } {
     upvar 0 ::cf::[set ::curcfg]::cfgDeployed cfgDeployed
     upvar 0 ::cf::[set ::curcfg]::eid eid
     global all_modules_list editor_only execMode isOSfreebsd isOSlinux
-	puts "Setting oper mode"
 
     if {$mode == "exec" && $node_list == ""} {
 	statline "Empty topologies can't be executed."
@@ -881,7 +880,10 @@ proc deployNodeToRunningExperiment { node } {
     services start "NODEINST" $node
     services start "LINKINST" $node
 
-	[typemodel $node].start $eid $node
+	if {[info procs [typemodel $node].start] != ""} {
+		puts "\nStarting $node"
+		[typemodel $node].start $eid $node
+	}
 
     services start "NODECONF" $node
 	pipesClose
@@ -917,6 +919,7 @@ proc deployCfg {} {
     set running_eids [getResumableExperiments]
     if {$execMode != "batch"} {
 	set eid ${eid_base}[string range $::curcfg 1 end]
+	puts "Deploy cfg, eid: $eid"
 	while { $eid in $running_eids } {
 	    set eid_base [genExperimentId]
 	    set eid ${eid_base}[string range $::curcfg 1 end]

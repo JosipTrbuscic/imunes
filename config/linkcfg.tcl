@@ -977,6 +977,7 @@ proc newLink { lnode1 lnode2 } {
     upvar 0 ::cf::[set ::curcfg]::link_list link_list
     upvar 0 ::cf::[set ::curcfg]::$lnode1 $lnode1
     upvar 0 ::cf::[set ::curcfg]::$lnode2 $lnode2
+    upvar 0 ::cf::[set ::curcfg]::eid eid
     global defEthBandwidth defSerBandwidth defSerDelay
 
     foreach node "$lnode1 $lnode2" {
@@ -1030,17 +1031,59 @@ proc newLink { lnode1 lnode2 } {
     }
 
     if { $oper_mode == "exec" } {
+        set nodeType [nodeType $lnode1]
+        puts "Node type: $nodeType"
+        set layer1 [[typemodel $lnode1].layer]
+        set layer2 [[typemodel $lnode2].layer]
+
+        puts "layer1: $layer1"
+        puts "layer2: $layer2"
         pipesCreate
-        createNodePhysIfc $lnode1 $ifname1
-        createNodePhysIfc $lnode2 $ifname2
-        startIfcsNode $lnode1
-        startIfcsNode $lnode2
-        configureICMPoptions $lnode1
-        configureICMPoptions $lnode2
+
+        set confFile "boot.conf"
+        # from l3node.instantiate
+        if { $layer1 == "NETWORK" } {
+
+
+            set bootcmd [[typemodel $node].bootcmd $node]
+            execCmdNode $lnode1 "service quagga stop"
+            set node_dir [getVrootDir]/$eid/$lnode1
+            set node_id "$eid.$lnode1"
+            set bootcfg [[typemodel $lnode1].cfggen $lnode1]
+            puts "Bootcfg for $lnode1: $bootcfg"
+
+            writeDataToFile $node_dir/$confFile [join $bootcfg "\n"]
+            #execCmdNode $lnode1 "service quagga onestart"
+
+            createNodePhysIfc $lnode1 $ifname1
+            startIfcsNode $lnode1
+            configureICMPoptions $lnode1
+        }
+
+        if { $layer2 == "NETWORK" } {
+            execCmdNode $lnode2 "service quagga stop"
+            set node_dir [getVrootDir]/$eid/$lnode2
+            set node_id "$eid.$lnode2"
+            set bootcfg [[typemodel $lnode2].cfggen $lnode2]
+            puts "Bootcfg for $lnode2: $bootcfg"
+
+            writeDataToFile $node_dir/$confFile [join $bootcfg "\n"]
+            #execCmdNode $lnode2 "service quagga onestart"
+
+            createNodePhysIfc $lnode2 $ifname2
+            startIfcsNode $lnode2
+            configureICMPoptions $lnode2
+        }
+
         createLinkBetween $lnode1 $lnode2 $ifname1 $ifname2
         configureLinkBetween $lnode1 $lnode2 $ifname1 $ifname2 $link
-        runConfOnNode $lnode1
-        runConfOnNode $lnode2
+
+        if { $layer1 == "NETWORK" } {
+            runConfOnNode $lnode1
+        }
+        if { $layer2 == "NETWORK" } {
+            runConfOnNode $lnode2
+        }
         pipesClose
     }
 

@@ -41,6 +41,21 @@ proc animateCursor {} {
 #****
 proc removeGUILink { link atomic } {
     global changed
+    upvar 0 ::cf::[set ::curcfg]::eid eid
+    upvar 0 ::cf::[set ::curcfg]::oper_mode oper_mode
+	upvar 0 ::cf::[set ::curcfg]::ngnodemap ngnodemap
+	puts "removeGUILink: Removing $link"
+	if { $oper_mode == "exec" } {
+		pipesCreate
+
+		set candidateNode1 [lindex [linkPeers $link] 0]
+		set candidateNode2 [lindex [linkPeers $link] 1]
+
+		puts "Destroyin link: $link"
+		destroyLinkBetween $eid $candidateNode1 $candidateNode2
+
+		pipesClose
+	}
 
     set nodes [linkPeers $link]
     set node1 [lindex $nodes 0]
@@ -64,6 +79,29 @@ proc removeGUILink { link atomic } {
     } else {
 	removeLink $link
     }
+
+	pipesCreate
+	foreach node $nodes {
+		if { [[typemodel $node].layer] == "NETWORK"} {
+			set ifcsOnNodeWithLoopback [execCmdNode $node "ifconfig -l"]
+			set idx [lsearch $ifcsOnNodeWithLoopback "lo0"]
+			set ifcsOnNode [lreplace $ifcsOnNodeWithLoopback $idx $idx]
+			set correctIfcs [ifcList $node]
+			foreach ifc $ifcsOnNode {
+				puts "Searching for $ifc on $node"
+				if { [lsearch -exact $correctIfcs $ifc] == -1 } {
+					puts "Destroying $ifc on $node"
+					set ngnode $ngnodemap($ifc@$eid.$node)
+					puts "ngnode: $ngnode"
+					pipesExec "jexec $eid ngctl shutdown $ngnode:"
+					#execCmdNode $node "ifconfig "
+				}
+
+			}
+		}
+	}
+	pipesClose
+
     .panwin.f1.c delete $link
     if { $atomic == "atomic" } {
 	set changed 1
@@ -382,7 +420,9 @@ proc button3link { c x y } {
 	    -command "removeGUILink $link atomic"
     } else {
 	.button3menu add command -label "Delete" \
-	    -state disabled
+	    -command "removeGUILink $link atomic"
+	#.button3menu add command -label "Delete" \
+	#    -state disabled
     }
 
     #
@@ -1816,6 +1856,7 @@ proc deleteSelection {} {
     upvar 0 ::cf::[set ::curcfg]::oper_mode oper_mode
     upvar 0 ::cf::[set ::curcfg]::eid eid
     upvar 0 ::cf::[set ::curcfg]::node_list node_list
+    upvar 0 ::cf::[set ::curcfg]::link_list link_list
     upvar 0 ::cf::[set ::curcfg]::ngnodemap ngnodemap
     global changed
     global background 
@@ -1832,6 +1873,26 @@ proc deleteSelection {} {
     foreach lnode [selectedNodes] {
 	if { $lnode != "" } {
 		puts "deleteSelection: Removing $lnode"
+		if { $oper_mode == "exec" } {
+			pipesCreate
+			set linksToDelete ""
+
+			foreach link $link_list {
+				set candidateNode1 [lindex [linkPeers $link] 0]
+				set candidateNode2 [lindex [linkPeers $link] 1]
+
+				puts "Cand1: $candidateNode1, cand2: $candidateNode2"
+				if { $lnode == $candidateNode1 || $lnode == $candidateNode2 } {
+					puts "Setting $link"
+					lappend linksToDelete $link
+					destroyLinkBetween $eid $candidateNode1 $candidateNode2
+				}
+			}
+
+			puts "Links to delete: $linksToDelete"
+			pipesClose
+		}
+
 	    removeGUINode $lnode
 		if { $oper_mode == "exec" } {
 			puts "deleteSelection: Shutting down $lnode"

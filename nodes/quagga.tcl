@@ -96,10 +96,13 @@ proc $MODULE.cfggen { node } {
 
     set cfg {}
 
+	puts "node $node:ifcs"
     foreach ifc [allIfcList $node] {
+		puts "ifc: $ifc"
 	lappend cfg "interface $ifc"
 	set addrs [getIfcIPv4addrs $node $ifc]
 	foreach addr $addrs {
+		puts "addr for $ifc on $node: $addr"
 	    if { $addr != "" } {
 		lappend cfg " ip address $addr"
 	    }

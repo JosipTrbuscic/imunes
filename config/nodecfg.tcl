@@ -1033,6 +1033,7 @@ proc getIfcIPv4addrs { node ifc } {
 	    lappend addrlist [lindex $line 2]
 	}
     }
+    puts "returned ipv4addrs for $node on $ifc: $addrlist"
     return $addrlist
 }
 
