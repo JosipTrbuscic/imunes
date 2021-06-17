@@ -2190,3 +2190,21 @@ proc terminateRunningNode { node } {
 
 	pipesClose
 }
+
+proc removeIfcFromRunningNode { node ifc } {
+    upvar 0 ::cf::[set ::curcfg]::ngnodemap ngnodemap
+    upvar 0 ::cf::[set ::curcfg]::eid eid
+    puts "Removingz $ifc from $node"
+
+    #remove ip address
+    foreach ipv4 [getIfcIPv4addr $node $ifc] {
+	    catch "exec jexec $node ifconfig $ifc $ipv4 -alias"
+	}
+	foreach ipv6 [getIfcIPv6addr $node $ifc] {
+	    catch "exec jexec $node ifconfig $ifc inet6 $ipv6 -alias"
+	}
+
+    #destroyVirtNodeifcs
+	set ngnode $ngnodemap($ifc@$eid.$node)
+	pipesExec "jexec $eid ngctl shutdown $ngnode:"
+}

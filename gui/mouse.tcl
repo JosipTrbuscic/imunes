@@ -45,21 +45,23 @@ proc removeGUILink { link atomic } {
     upvar 0 ::cf::[set ::curcfg]::oper_mode oper_mode
 	upvar 0 ::cf::[set ::curcfg]::ngnodemap ngnodemap
 	puts "removeGUILink: Removing $link"
-	if { $oper_mode == "exec" } {
-		pipesCreate
-
-		set candidateNode1 [lindex [linkPeers $link] 0]
-		set candidateNode2 [lindex [linkPeers $link] 1]
-
-		puts "Destroyin link: $link"
-		destroyLinkBetween $eid $candidateNode1 $candidateNode2
-
-		pipesClose
-	}
 
     set nodes [linkPeers $link]
     set node1 [lindex $nodes 0]
     set node2 [lindex $nodes 1]
+
+	if { $oper_mode == "exec" } {
+		pipesCreate
+
+		puts "Destroyin link: $link"
+		destroyLinkBetween $eid $node1 $node2
+
+		removeIfcFromRunningNode $node1 [ifcByPeer $node1 $node2]
+		removeIfcFromRunningNode $node2 [ifcByPeer $node2 $node1]
+
+		pipesClose
+	}
+
     if {[nodeType $node1] == "wlan" || [nodeType $node2] == "wlan"} {
 	removeLink $link
 	return
@@ -79,31 +81,6 @@ proc removeGUILink { link atomic } {
     } else {
 	removeLink $link
     }
-
-
-	if { $oper_mode == "exec" } {
-		pipesCreate
-		foreach node $nodes {
-			if { [[typemodel $node].layer] == "NETWORK"} {
-				set ifcsOnNodeWithLoopback [execCmdNode $node "ifconfig -l"]
-				set idx [lsearch $ifcsOnNodeWithLoopback "lo0"]
-				set ifcsOnNode [lreplace $ifcsOnNodeWithLoopback $idx $idx]
-				set correctIfcs [ifcList $node]
-				foreach ifc $ifcsOnNode {
-					puts "Searching for $ifc on $node"
-					if { [lsearch -exact $correctIfcs $ifc] == -1 } {
-						puts "Destroying $ifc on $node"
-						set ngnode $ngnodemap($ifc@$eid.$node)
-						puts "ngnode: $ngnode"
-						pipesExec "jexec $eid ngctl shutdown $ngnode:"
-						#execCmdNode $node "ifconfig "
-					}
-
-				}
-			}
-		}
-		pipesClose
-	}
 
     .panwin.f1.c delete $link
     if { $atomic == "atomic" } {
