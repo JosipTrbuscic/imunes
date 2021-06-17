@@ -80,27 +80,30 @@ proc removeGUILink { link atomic } {
 	removeLink $link
     }
 
-	pipesCreate
-	foreach node $nodes {
-		if { [[typemodel $node].layer] == "NETWORK"} {
-			set ifcsOnNodeWithLoopback [execCmdNode $node "ifconfig -l"]
-			set idx [lsearch $ifcsOnNodeWithLoopback "lo0"]
-			set ifcsOnNode [lreplace $ifcsOnNodeWithLoopback $idx $idx]
-			set correctIfcs [ifcList $node]
-			foreach ifc $ifcsOnNode {
-				puts "Searching for $ifc on $node"
-				if { [lsearch -exact $correctIfcs $ifc] == -1 } {
-					puts "Destroying $ifc on $node"
-					set ngnode $ngnodemap($ifc@$eid.$node)
-					puts "ngnode: $ngnode"
-					pipesExec "jexec $eid ngctl shutdown $ngnode:"
-					#execCmdNode $node "ifconfig "
-				}
 
+	if { $oper_mode == "exec" } {
+		pipesCreate
+		foreach node $nodes {
+			if { [[typemodel $node].layer] == "NETWORK"} {
+				set ifcsOnNodeWithLoopback [execCmdNode $node "ifconfig -l"]
+				set idx [lsearch $ifcsOnNodeWithLoopback "lo0"]
+				set ifcsOnNode [lreplace $ifcsOnNodeWithLoopback $idx $idx]
+				set correctIfcs [ifcList $node]
+				foreach ifc $ifcsOnNode {
+					puts "Searching for $ifc on $node"
+					if { [lsearch -exact $correctIfcs $ifc] == -1 } {
+						puts "Destroying $ifc on $node"
+						set ngnode $ngnodemap($ifc@$eid.$node)
+						puts "ngnode: $ngnode"
+						pipesExec "jexec $eid ngctl shutdown $ngnode:"
+						#execCmdNode $node "ifconfig "
+					}
+
+				}
 			}
 		}
+		pipesClose
 	}
-	pipesClose
 
     .panwin.f1.c delete $link
     if { $atomic == "atomic" } {
@@ -1871,57 +1874,13 @@ proc deleteSelection {} {
     .panwin.f1.c config -cursor watch; update
 
     foreach lnode [selectedNodes] {
+		puts "Selected lnode: $lnode"
 	if { $lnode != "" } {
 		puts "deleteSelection: Removing $lnode"
-		if { $oper_mode == "exec" } {
-			pipesCreate
-			set linksToDelete ""
-
-			foreach link $link_list {
-				set candidateNode1 [lindex [linkPeers $link] 0]
-				set candidateNode2 [lindex [linkPeers $link] 1]
-
-				puts "Cand1: $candidateNode1, cand2: $candidateNode2"
-				if { $lnode == $candidateNode1 || $lnode == $candidateNode2 } {
-					puts "Setting $link"
-					lappend linksToDelete $link
-					destroyLinkBetween $eid $candidateNode1 $candidateNode2
-				}
-			}
-
-			puts "Links to delete: $linksToDelete"
-			pipesClose
-		}
 
 	    removeGUINode $lnode
 		if { $oper_mode == "exec" } {
-			puts "deleteSelection: Shutting down $lnode"
-			l3node.shutdown $eid $lnode
-			puts "deleteSelection: Destroying $lnode"
-			l3node.destroy $eid $lnode
-			pipesCreate
-			foreach node $node_list {
-				if { [[typemodel $node].layer] == "NETWORK"} {
-					set ifcsOnNodeWithLoopback [execCmdNode $node "ifconfig -l"]
-					set idx [lsearch $ifcsOnNodeWithLoopback "lo0"]
-					set ifcsOnNode [lreplace $ifcsOnNodeWithLoopback $idx $idx]
-					set correctIfcs [ifcList $node]
-					foreach ifc $ifcsOnNode {
-						puts "Searching for $ifc on $node"
-						if { [lsearch -exact $correctIfcs $ifc] == -1 } {
-							puts "Destroying $ifc on $node"
-							set ngnode $ngnodemap($ifc@$eid.$node)
-							puts "ngnode: $ngnode"
-							pipesExec "jexec $eid ngctl shutdown $ngnode:"
-							#execCmdNode $node "ifconfig "
-						}
-
-					}
-				}
-				puts "$node: $ifcsOnNode"
-				puts "\n"
-			}
-			pipesClose
+			terminateRunningNode $lnode
 		}
 	}
 	if { [isAnnotation $lnode] } {

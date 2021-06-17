@@ -279,6 +279,7 @@ proc fetchRunningExperiments {} {
 #   * name -- the name of the new interface
 #****
 proc createIfc { eid type hook } {
+    puts "create ifc: mkpeer $type $hook $hook show .$hook"
     catch { exec printf "mkpeer $type $hook $hook \n show .$hook" | jexec $eid ngctl -f - } nglist
     return [lindex $nglist 1]
 }
@@ -1096,6 +1097,7 @@ proc prepareFilesystemForNode { node } {
     upvar 0 ::cf::[set ::curcfg]::eid eid
     global vroot_unionfs vroot_linprocfs devfs_number
 
+    puts "unionfs: $vroot_unionfs"
     # Prepare a copy-on-write filesystem root
     if {$vroot_unionfs} {
 	# UNIONFS
@@ -1322,9 +1324,7 @@ proc startIfcsNode { node } {
 
     set node_id "$eid.$node"
     set cmds ""
-    puts "Node list: $node_list"
     foreach ifc [allIfcList $node] {
-        puts "Starting $ifc on $node"
 	set mtu [getIfcMTU $node $ifc]
 	if {[getIfcOperState $node $ifc] == "up"} {
 	    set cmds "$cmds\n jexec $node_id ifconfig $ifc mtu $mtu up"
@@ -1332,6 +1332,7 @@ proc startIfcsNode { node } {
 	    set cmds "$cmds\n jexec $node_id ifconfig $ifc mtu $mtu"
 	}
     }
+    puts "executing cmds: $cmds"
     exec sh << $cmds
 }
 
@@ -1379,6 +1380,7 @@ proc runConfOnNode { node } {
     } else {
 	set cmds "\njexec $node_id $bootcmd $confFile > $node_dir/out.log 2>&1"
     }
+    puts "cmds: $cmds"
 
     foreach ifc [allIfcList $node] {
 	if {[getIfcOperState $node $ifc] == "down"} {
@@ -1790,6 +1792,7 @@ proc destroyNetgraphNodes { eid ngraphs widget } {
 	foreach node $ngraphs {
 	    incr i
 	    # statline "Shutting down netgraph node $node ([typemodel $node])"
+	    puts "Shutting down netgraph node $node ([typemodel $node])"
 	    [typemodel $node].destroy $eid $node
 	    if {$execMode != "batch"} {
 		$widget.p step -1
@@ -2159,4 +2162,31 @@ proc startExternalIfc { eid node } {
 
 proc stopExternalIfc { eid node } {
     exec ifconfig $eid-$node down
+}
+
+proc terminateRunningNode { node } {
+    upvar 0 ::cf::[set ::curcfg]::eid eid
+    upvar 0 ::cf::[set ::curcfg]::link_list link_list
+
+	pipesCreate
+	if { [info procs [typemodel $node].shutdown] != "" } {
+		[typemodel $node].shutdown $eid $node
+	}
+
+	foreach link $link_list {
+		set candidateNode1 [lindex [linkPeers $link] 0]
+		set candidateNode2 [lindex [linkPeers $link] 1]
+
+		if { $node == $candidateNode1 || $node == $candidateNode2 } {
+			destroyLinkBetween $eid $candidateNode1 $candidateNode2
+		}
+	}
+
+	if { [[typemodel $node].virtlayer] == "VIMAGE" } {
+		destroyVirtNodeIfcs $eid [list $node]
+	}
+	
+	[typemodel $node].destroy $eid $node
+
+	pipesClose
 }
